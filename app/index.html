@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+    <link href='style.css' rel='stylesheet' type='text/css'>
+    <title>IPFS + Ethereum</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>IPFS + Ethereum 实验</h1>
+      <form>        
+        <div class="form-group">
+          <label for="uploadfile">选择上传到IPFS的文件</label>
+          <input type="file" id="uploadfile">
+          <p class="help-block">选择上传到IPFS的文件，它将被切片，并且会根据数据分片计算出root的hash值.</p>
+          <button type="button" class="btn btn-primary" onclick="uploadFile();" style="width: 160px;">上传文件并计算Root</button>
+        </div>        
+        <p class="lead" id="root">MerkleRoot is: 0x000000000000000000000000</p>
+        <button type="button" class="btn btn-primary" onclick="deployAddress2Eth();" style="width: 160px;">部署到Ethereum</button>
+        <p class="lead" id="transHash">Address successfully stored. Transaction hash: 0x000000000000000000000000</p>
+    </form> 
+    </div>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="bootstrap.min.js"></script>
+    <script type="text/javascript" src="web3.min.js"></script>
+    <script type="text/javascript" src="app.js"></script>
+    <script type="text/javascript" src="contract.js"></script>
+    
+    <script type="text/javascript">
+      
+    </script>
+  </body>
+</html>
