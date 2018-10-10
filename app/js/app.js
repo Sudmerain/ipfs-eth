@@ -23,6 +23,8 @@ var sliceLength;
 window.originRoot = "";
 window.originRootAddress = "";
 
+window.newRoot = "";
+window.newRootAddress = "";
 
 window.lovedd = function(){
   alert("dd, I love you!!!");
@@ -39,7 +41,7 @@ window.uploadFile = function() {
   }).then(function(){
     $("#root").text("MerkleRoot is: " + originRoot)
   }).then(function(){
-    storeData(window.originRoot);
+    storeData(window.originRoot, window.originRootAddress);
   })
   
 }
@@ -62,7 +64,7 @@ function getFileContent(){
 }
 
 
-function storeData(data){
+function storeData(data, address){
   return new Promise(function (resolve, reject) {
     if(data == ""){
       reject("数据不能为空！！！");
@@ -76,7 +78,7 @@ function storeData(data){
       res.forEach((file) => {
         if (file && file.hash) {
           console.log('successfully stored, you can see it at http://localhost:8080/'+file.hash)
-          window.originRootAddress = file.hash;
+          address = file.hash;
         }
       })
     })
@@ -217,3 +219,133 @@ function getNewTxList(tempTxList) {  //the other layers of merkle tree
     console.log(publicTree);
     return newTxList;
 }
+
+
+//验证阶段
+
+window.computeRoot2 = function (){
+  if(window.originRoot != "" && window.newRootAddress != ""){
+    return;
+  }
+  
+  var challenge = $("#challengeNum").val();
+  var preleaves = getPreleaves();
+  var auxiliarypath = getAuxiliarypath();
+  var publictreelength = getPublictreeLength(publicTree);
+  if(!preleaves || !auxiliarypath || !publictreelength){
+    alert("计算root2出现异常！！！");
+    return;
+  }
+  
+  var h1=0;
+  var h2=0;
+
+  var path=[];
+  while(h2<auxiliarypath.length){   //将辅助路径转换成数组
+    path.push(auxiliarypath.substr(h2,64));
+    h2+=65;
+  }
+  console.log("path length is" + path.length);
+  console.log("publicTree length is "+ publicTree.length);
+
+  var deep = 0;
+  var k = 0;
+  while (k != publictreelength) { //deep of the tree
+      k += Math.pow(2, deep);
+      deep++;
+  }
+
+  var start = 0;   //i is the challenge's index in npublicTree 
+  for (var i = 0; i < deep - 1; i++) {
+      start += Math.pow(2, i);
+  }
+  start++;
+
+  var i = Number(challenge) + Number(start); //i is the index of verified shard in npublictree
+  console.log("the verified index is "+i);
+
+  //拼接辅助路径，验证的位置不同，拼接的方法不同
+  var j=0;
+    while (j < path.length) {
+        if (i % 2 == 0) {
+          console.log(i);
+            var digest = leave.concat(path[j]);          
+            i = i / 2;
+            console.log(i);
+
+        } else if (i % 2==1) {
+          console.log(i);
+            var digest = path[j].concat(leave);          
+            i = (i - 1)/ 2;
+            console.log(i);
+        }
+        j +=1;
+        console.log(digest);
+        leave = SHA256(digest.trim()).toString(); //use auxiliary path to hash to get father leave
+        console.log(leave);
+    }
+ 
+  window.newRoot = '0x'.concat(leave);  //root2 is the new merkle tree 
+  $("#root").text("MerkleRoot2 is: " + newRoot);
+  storeData(window.originRoot, window.newRootAddress);  
+}
+
+function getPublictreeLength(publicTree){
+  var h1=0;
+  var tmpTree=[];
+  while(h1<publicTree.length){   //将数据树转换成数组
+    tmpTree.push(publicTree.substr(h1,64));
+    h1+=65;
+  }   
+  console.log($.cookie("publictreelength"));
+  return tmpTree.length;
+}
+
+
+function getPreleaves(){
+  var num = $("#challengeNum").val();
+  if(num < 0 || num >= hashResult.length){
+    alert("分片索引超出范围！！！");
+    return ;
+  }
+  return hashResult[num];
+}
+
+function getAuxiliarypath() {
+  var starttime = new Date().getTime();
+
+  var num = $("#challengeNum").val();
+  if(num < 0 || num >= hashResult.length){
+    alert("分片索引超出范围！！！");
+    return ;
+  }
+  transArray(publicTree);  //transpose publicTree to get npublicTree
+  var n = Math.log(publicTree.length + 1) / Math.log(2); //deep of the tree
+  var leavesnum = Math.pow(2, n - 1); //the num of leaves
+  var i = Number(num) + Number(leavesnum); //i is the index on the npublicTree
+  console.log(npublicTree);
+  var j = 0;
+  while (i != 1) {
+      if (i % 2 == 0) {
+          path[j] = npublicTree[i + 1];
+      } else {
+          path[j] = npublicTree[i - 1];
+      }
+      j++;
+      i = Math.floor(i / 2);
+  }
+  console.log(path);  
+  var endtime = new Date().getTime();
+  console.log("the auxiliarypath time is " + (endtime - starttime));
+  return path; //path[] is the auxiliary path of shard i
+}
+
+function transArray(publicTree) {   //transpose publicTree to get npublicTree
+    for (var i = 0, j = publicTree.length; i < publicTree.length; i++, j--) {
+        npublicTree[j] = publicTree[i];
+    }
+    npublicTree[0] = "";
+}
+
+
+  

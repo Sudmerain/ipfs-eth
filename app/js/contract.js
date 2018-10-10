@@ -19,30 +19,40 @@ var root2Instance;
 var integrityContract = web3.eth.contract([{"constant":true,"inputs":[{"name":"root1","type":"bytes32"},{"name":"root2","type":"bytes32"}],"name":"compare","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]);
 var integrityContractInstance;
 
+var rootData;
+var root2Data;
+
 window.deployRootAddress2Eth = function(){
     // if(window.originRootAddress == ""){
     //     alert("root的地址hash值不能为空！！！");        
     // }
-    // console.log("root's ipfs address:" + window.originRootAddress);
-    // deployStorage();
-    // storeAddress(window.originRootAddress);
+    // console.log("root's ipfs address:" + window.originRootAddress);  
+    
     deployRootStorage();
+    //storeAddress(window.originRootAddress, rootInstance);
     storeAddress("dd, i love you", rootInstance);
-    fetchEthData(rootInstance);
+    fetchEthData(rootInstance, rootData);
 }
 
 window.deployRoot2Address2Eth = function(){
-    // if(window.originRootAddress == ""){
+    // if(window.newRootAddress == ""){
     //     alert("root的地址hash值不能为空！！！");        
     // }
-    // console.log("root's ipfs address:" + window.originRootAddress);
+    // console.log("root's ipfs address:" + window.newRootAddress);
     deployRoot2Storage();
+    //storeAddress(window.newRootAddress, rootInstance);
     storeAddress("dd, i love you forever", root2Instance);
-    fetchEthData(root2Instance);
+    fetchEthData(root2Instance,root2Data);
 }
 
 window.verify = function(){
+    computeRoot2();
+    if(!rootData || !root2Data){
+        alert("计算出错！！！");
+        return;
+    }
     deployintegrityContract();
+    //compareRoot(rootData, root2Data);
     compareRoot('0x123', '0x123');
     compareRoot('0x123', '0x1234');
 }
@@ -103,7 +113,7 @@ function storeAddress(data, simplestorageContractInstance){
     });
 }
 
-function fetchEthData(simplestorageContractInstance) {
+function fetchEthData(simplestorageContractInstance, data) {
     if (!simplestorageContractInstance) {
         console.error("Storage contract has not been deployed");
         return;
@@ -114,6 +124,7 @@ function fetchEthData(simplestorageContractInstance) {
             console.error("Content fetch error:", err);
         } else if (result) {
             console.log("Content successfully retrieved:", result);
+            data = result;
         } else {
             console.error('No data, verify the transaction has been mined');
         }

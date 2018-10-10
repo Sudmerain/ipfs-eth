@@ -9,18 +9,37 @@
   </head>
   <body>
     <div class="container">
-      <h1>IPFS + Ethereum 实验</h1>
-      <form>        
-        <div class="form-group">
-          <label for="uploadfile">选择上传到IPFS的文件</label>
-          <input type="file" id="uploadfile">
-          <p class="help-block">选择上传到IPFS的文件，它将被切片，并且会根据数据分片计算出root的hash值.</p>
-          <button type="button" class="btn btn-primary" onclick="uploadFile();" style="width: 160px;">上传文件并计算Root</button>
-        </div>        
-        <p class="lead" id="root">MerkleRoot is: 0x000000000000000000000000</p>
-        <button type="button" class="btn btn-primary" onclick="deployAddress2Eth();" style="width: 160px;">部署到Ethereum</button>
-        <p class="lead" id="transHash">Address successfully stored. Transaction hash: 0x000000000000000000000000</p>
-    </form> 
+      <h3 style="margin-bottom: 20px;">IPFS + Ethereum 实验准备</h3>
+      <div class="panel panel-default">
+        <div class="panel-heading"><h4>IPFS + Ethereum 实验准备阶段</h4></div>
+        <div class="panel-body">
+          <form>        
+            <div class="form-group">
+              <label for="uploadfile">选择上传到IPFS的文件</label>
+              <input type="file" id="uploadfile">
+              <p class="help-block">选择上传到IPFS的文件，它将被切片，并且会根据数据分片计算出root的hash值.</p>
+              <button type="button" class="btn btn-primary" onclick="uploadFile();" style="width: 160px;">上传文件并计算Root</button>
+            </div>        
+            <p class="lead" id="root">MerkleRoot is: 0x000000000000000000000000</p>
+            <button type="button" class="btn btn-primary" onclick="deployAddress2Eth();" style="width: 160px;">部署到Ethereum</button>
+            <p class="lead" id="transHash">Address successfully stored. Transaction hash: 0x000000000000000000000000</p>
+          </form>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading"><h4>IPFS + Ethereum 实验验证</h4></div>
+        <div class="panel-body">
+          <form>
+            <div class="form-group">
+              <label for="challengeNum">The num of shard to verify</label>
+              <input type="number" class="form-control" id="challengeNum" placeholder="0">
+            </div> 
+            <p class="lead" id="root2">MerkleRoot2 is: 0x000000000000000000000000</p>
+            <button type="button" class="btn btn-primary" onclick="verify();" style="width: 160px;">验证分片</button>
+            <p class="lead" id="verifyResulst">数据分片验证结果：验证中...</p>
+          </form> 
+        </div>
+      </div>
     </div>
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="bootstrap.min.js"></script>
