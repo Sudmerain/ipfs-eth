@@ -39,9 +39,11 @@ window.uploadFile = function() {
   }).then(function(){
     merkleTree();
   }).then(function(){
+    merkleTree();
+  }).then(function(){
     $("#root").text("MerkleRoot is: " + originRoot)
   }).then(function(){
-    storeData(window.originRoot, window.originRootAddress);
+    //storeData(window.originRoot, window.originRootAddress);
   })
   
 }
@@ -227,11 +229,12 @@ window.computeRoot2 = function (){
   if(window.originRoot != "" && window.newRootAddress != ""){
     return;
   }
-  
+
   var challenge = $("#challengeNum").val();
-  var preleaves = getPreleaves();
-  var auxiliarypath = getAuxiliarypath();
-  var publictreelength = getPublictreeLength(publicTree);
+  var preleaves = getPreleaves().toString();
+  var auxiliarypath = getAuxiliarypath().toString();
+  var publictreelength = getPublictreeLength(publicTree.toString());
+  var leave=SHA256(preleaves.trim()).toString();
   if(!preleaves || !auxiliarypath || !publictreelength){
     alert("计算root2出现异常！！！");
     return;
@@ -245,12 +248,12 @@ window.computeRoot2 = function (){
     path.push(auxiliarypath.substr(h2,64));
     h2+=65;
   }
-  console.log("path length is" + path.length);
-  console.log("publicTree length is "+ publicTree.length);
-
+  console.log("path length is " + path.length);
+  console.log("publicTree length is "+ publictreelength);
+  
   var deep = 0;
   var k = 0;
-  while (k != publictreelength) { //deep of the tree
+  while (k >= publictreelength) { //deep of the tree
       k += Math.pow(2, deep);
       deep++;
   }
@@ -260,34 +263,34 @@ window.computeRoot2 = function (){
       start += Math.pow(2, i);
   }
   start++;
-
+  alert(start);
   var i = Number(challenge) + Number(start); //i is the index of verified shard in npublictree
   console.log("the verified index is "+i);
 
   //拼接辅助路径，验证的位置不同，拼接的方法不同
   var j=0;
-    while (j < path.length) {
-        if (i % 2 == 0) {
+  while (j < path.length) {
+      if (i % 2 == 0) {
+        console.log(i);
+          var digest = leave.concat(path[j]);          
+          i = i / 2;
           console.log(i);
-            var digest = leave.concat(path[j]);          
-            i = i / 2;
-            console.log(i);
 
-        } else if (i % 2==1) {
+      } else if (i % 2==1) {
+        console.log(i);
+          var digest = path[j].concat(leave);          
+          i = (i - 1)/ 2;
           console.log(i);
-            var digest = path[j].concat(leave);          
-            i = (i - 1)/ 2;
-            console.log(i);
-        }
-        j +=1;
-        console.log(digest);
-        leave = SHA256(digest.trim()).toString(); //use auxiliary path to hash to get father leave
-        console.log(leave);
-    }
+      }
+      j +=1;
+      console.log(digest);
+      leave = SHA256(digest.trim()).toString(); //use auxiliary path to hash to get father leave
+      console.log(leave);
+  }
  
   window.newRoot = '0x'.concat(leave);  //root2 is the new merkle tree 
-  $("#root").text("MerkleRoot2 is: " + newRoot);
-  storeData(window.originRoot, window.newRootAddress);  
+  $("#root2").text("MerkleRoot2 is: " + newRoot);
+  //storeData(window.originRoot, window.newRootAddress);  
 }
 
 function getPublictreeLength(publicTree){
@@ -297,7 +300,7 @@ function getPublictreeLength(publicTree){
     tmpTree.push(publicTree.substr(h1,64));
     h1+=65;
   }   
-  console.log($.cookie("publictreelength"));
+  console.log(tmpTree.length);
   return tmpTree.length;
 }
 
