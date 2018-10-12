@@ -16,52 +16,65 @@ var simplestorageContract = web3.eth.contract([{"constant":false,"inputs":[{"nam
 var rootInstance;
 var root2Instance;
 
+// var simplestorageContractInstance;
+
 var integrityContract = web3.eth.contract([{"constant":true,"inputs":[{"name":"root1","type":"bytes32"},{"name":"root2","type":"bytes32"}],"name":"compare","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]);
 var integrityContractInstance;
 
-var rootData;
-var root2Data;
+var rootData = {value:""};
+var root2Data = {value:""};
+
+var fetching = false;
+var deploying = false;
+
+var transHash = "";
+
+var gasCost = 0;
 
 window.deployRootAddress2Eth = function(){
-    // if(window.originRootAddress == ""){
-    //     alert("root的地址hash值不能为空！！！");        
-    // }
-    // console.log("root's ipfs address:" + window.originRootAddress);  
-    
+    if(window.originRootAddress.address == ""){
+        alert("root的地址hash值不能为空！！！");
+        return;        
+    }
+    console.log("root's ipfs address:" + window.originRootAddress.address); 
     deployRootStorage();
-    //storeAddress(window.originRootAddress, rootInstance);
-    storeAddress("dd, i love you", rootInstance);
+    storeAddress(window.originRootAddress.address, rootInstance);
+    // storeAddress("dd, i love you", rootInstance);
     fetchEthData(rootInstance, rootData);
 }
 
-window.deployRoot2Address2Eth = function(){
-    // if(window.newRootAddress == ""){
-    //     alert("root的地址hash值不能为空！！！");        
-    // }
-    // console.log("root's ipfs address:" + window.newRootAddress);
+window.deployRoot2Address2Eth = function(){    
+    if(window.newRootAddress.address == ""){
+        computeRoot2();
+        alert("root2的地址hash值不能为空！！！");
+        return;        
+    }
+    console.log("root2's ipfs address:" + window.newRootAddress.address);
     deployRoot2Storage();
-    //storeAddress(window.newRootAddress, rootInstance);
-    storeAddress("dd, i love you forever", root2Instance);
+    storeAddress(window.newRootAddress.address, root2Instance);
+    // storeAddress("dd, i love you forever", root2Instance);
     fetchEthData(root2Instance,root2Data);
 }
 
 window.verify = function(){
-    computeRoot2();
-    if(!rootData || !root2Data){
-        alert("计算出错！！！");
+    if(rootData.value == "" || root2Data.value == ""){
+        alert("等待计算结果！！！");
         return;
     }
     deployintegrityContract();
-    //compareRoot(rootData, root2Data);
-    compareRoot('0x123', '0x123');
-    compareRoot('0x123', '0x1234');
+    compareRoot(rootData.value, root2Data.value);
 }
 
 
 function deployRootStorage(){
     if(rootInstance){
         return;
-    }    
+    }
+    if(deploying){
+        alert("正在部署合约，请稍后点击:)");
+        return ;
+    }
+    deploying = true;    
     var simplestorage = simplestorageContract.new(
        {
          from: web3.eth.accounts[0], 
@@ -72,6 +85,7 @@ function deployRootStorage(){
         if (typeof contract.address !== 'undefined') {
              console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
              rootInstance = simplestorageContract.at(contract.address);
+             deploying = false;
         }
      })
 }
@@ -80,6 +94,11 @@ function deployRoot2Storage(){
     if(root2Instance){
         return;
     }    
+    if(deploying){
+        alert("正在部署合约，请稍后点击:)");
+        return ;
+    }
+    deploying = true;    
     var simplestorage = simplestorageContract.new(
        {
          from: web3.eth.accounts[0], 
@@ -90,6 +109,7 @@ function deployRoot2Storage(){
         if (typeof contract.address !== 'undefined') {
              console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
              root2Instance = simplestorageContract.at(contract.address);
+             deploying = false;
         }
      })
 }
@@ -99,34 +119,53 @@ function storeAddress(data, simplestorageContractInstance){
         console.error('Ensure the storage contract has been deployed');
         return;
     }
+    if(fetching){
+        return;
+    }
+    fetching = true;
     simplestorageContractInstance.set.sendTransaction(data,
-        {
-            from: web3.eth.accounts[0], 
-            gas: '4700000'
-        }, 
-        function (err, result) {
+    {
+        from: web3.eth.accounts[0], 
+        gas: '4700000'
+    }, 
+    function (err, result) {
         if (err) {
             console.error("Transaction submission error:", err);                
         } else {
             console.log("Address successfully stored. Transaction hash:", result);
+            transHash = result;
+            var amount = web3.eth.gasPrice * simplestorageContractInstance.set.estimateGas(data, {from: web3.eth.accounts[0]});
+            gasCost += amount;
+            console.log("消耗Gas：" + amount);
+            $("#gas").append("<p>SimplestorageContract.set() 方法此次消耗 gas 数量: " + amount + "</p>");
         }
     });
+    
 }
 
-function fetchEthData(simplestorageContractInstance, data) {
+function fetchEthData(simplestorageContractInstance, data) { //simplestorageContractInstance, data
     if (!simplestorageContractInstance) {
         console.error("Storage contract has not been deployed");
         return;
     }
-
     simplestorageContractInstance.get.call(function (err, result) {
         if (err) {
             console.error("Content fetch error:", err);
         } else if (result) {
             console.log("Content successfully retrieved:", result);
-            data = result;
+            data.value = result;
+            fetching = false;
+            $("#transHash").html("Address successfully stored. </br>Transaction hash: " + transHash);
+
+            var amount = web3.eth.gasPrice * simplestorageContractInstance.get.estimateGas({from: web3.eth.accounts[0]});
+            gasCost += amount;
+            console.log("消耗Gas：" + amount);
+            $("#gas").append("<p>SimplestorageContract.get() 方法此次消耗 gas 数量: " + amount + "</p>");
+
+            alert("部署到Ethereum成功！！！");
         } else {
             console.error('No data, verify the transaction has been mined');
+            alert("正在部署到Ethereum，请等待30S后再次点击:)");
         }
     });
 }
@@ -135,6 +174,11 @@ function deployintegrityContract(){
     if(integrityContractInstance){
         return ;
     }
+    if(deploying){
+        alert("正在部署合约，请稍后点击:)");
+        return ;
+    }
+    deploying = true;
     var integrity = integrityContract.new(
     {
         from: web3.eth.accounts[0], 
@@ -145,6 +189,7 @@ function deployintegrityContract(){
         if (typeof contract.address !== 'undefined') {
             console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
             integrityContractInstance = integrityContract.at(contract.address);
+            deploying = false;
         }
     })
 }
@@ -154,17 +199,35 @@ function compareRoot(root, root2){
         console.error("Integrity contract has not been deployed");
         return;
     }
+    root = toHash(root);
+    root2 = toHash(root2);
+    console.log(root + "-" + root2);
+    console.log(root == root2);
     integrityContractInstance.compare.call(root2, root, function (err, result) {
         if(err){
             console.err("Compare error:", err);
         }else if (result){
             if(result.valueOf() == 2) {
                 console.log("数据片被损坏！")
+                $("#verifyResulst").text("数据分片验证结果：数据片被损坏！")
             } else {
-                console.log("数据片完好！")
+                console.log("数据片完好！");
+                $("#verifyResulst").text("数据分片验证结果：数据片完好！");
+
+                var amount = web3.eth.gasPrice * integrityContractInstance.compare.estimateGas(root2, root, {from: web3.eth.accounts[0]});
+                gasCost += amount;
+                console.log("消耗Gas：" + amount);
+                $("#gas").append("<p>IntegrityContract.compare() 方法此次消耗 gas 数量: " + amount + "</p>");
+                $("#gas").append("<p>一共消耗 gas 数量: " + gasCost + "</p>");
             }
         }else{
             console.error('No data, verify the transaction has been mined');
+            $("#verifyResulst").text("数据分片验证结果：验证中...");
         }
     });
+}
+
+function getGas(fun){
+    var quantity = fun;
+    var amount = quantity * web3.eth.gasPrice;
 }

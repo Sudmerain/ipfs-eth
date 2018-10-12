@@ -1,3 +1,8 @@
 #root, #rootHash, #transHash, #root2, #verifyResulst{
-	margin: 20px 0;
+	margin: 10px 0;
+}
+
+.tips{
+	font-size: 16px;
+	color: #FF9966;
 }

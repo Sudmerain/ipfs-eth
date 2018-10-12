@@ -23,27 +23,30 @@ var sliceLength;
 window.originRoot = "";
 window.originRootAddress = "";
 
+window.originRootAddress = {address:""}
+
 window.newRoot = "";
-window.newRootAddress = "";
+window.newRootAddress = {address:""};
 
 window.lovedd = function(){
   alert("dd, I love you!!!");
 }
 
 window.uploadFile = function() {
+  slices = [];
+  hashResult = [];
+  publicTree = [];
+
   getFileContent().then(function(){
     sliceData(fileData);
   }).then(function(){
     hashData(slices);
-    console.log(hashResult);
-  }).then(function(){
-    merkleTree();
   }).then(function(){
     merkleTree();
   }).then(function(){
     $("#root").text("MerkleRoot is: " + originRoot)
   }).then(function(){
-    //storeData(window.originRoot, window.originRootAddress);
+    storeData(window.originRoot, window.originRootAddress);
   })
   
 }
@@ -55,7 +58,7 @@ function getFileContent(){
         var reader = new FileReader();
         reader.readAsText(resultFile, 'UTF-8');
         reader.onload = function(e) {
-          fileData = this.result;
+          fileData = this.result.trim();
           resolve("上传成功");
         }
     }else{
@@ -71,7 +74,6 @@ function storeData(data, address){
     if(data == ""){
       reject("数据不能为空！！！");
     }
-    console.log(data);
     ipfs.files.add(Buffer.from(data), (err, res) => {
       if (err || !res) {
         return console.error('ipfs add error', err, res)
@@ -80,7 +82,7 @@ function storeData(data, address){
       res.forEach((file) => {
         if (file && file.hash) {
           console.log('successfully stored, you can see it at http://localhost:8080/'+file.hash)
-          address = file.hash;
+          address.address = file.hash;
         }
       })
     })
@@ -101,11 +103,12 @@ function sliceData(str) {
     if(str == ""){
       reject("数据不能为空");
     }
-    var strlen = str.length;
+    str = str.trim();
+    var strlen = str.trim().length;
     for (var i = 0, j = 0; i < strlen; i += 2, j++) {
         var tmpstr = str.slice(i, i + 2);
         slices.push(j + tmpstr);
-    }
+    }    
   })    
 }
 
@@ -134,10 +137,7 @@ function merkleTree() {  //use hashresult to genarate merkle tree
     }
     publicIndex = publicTree.length;
     publicTree[publicIndex++] = (newTxList[0].toString());  //the merkle tree root
-    console.log(publicTree);
-    console.log(publicTree.length);
-    console.log(newTxList[0].toString());
-    window.originRoot = newTxList[0].toString();
+    window.originRoot = "0x" + newTxList[0].toString();
   })
 }
 
@@ -179,7 +179,6 @@ function pregetNewTxList(tempTxList) {   //the first layer of merkle tree, that 
         index++;
     }
     publicTree = prepublicTree;  //use prepublicTree to set publicTree
-    console.log(publicTree);
     return newTxList;
 }
 
@@ -199,8 +198,6 @@ function getNewTxList(tempTxList) {  //the other layers of merkle tree
     }
 
     while (index < tempTxList.length) {  //hash this layer to get father layer
-        console.log(publicTree.length);
-
         var left = tempTxList[index].toString();
         index++;
 
@@ -217,8 +214,6 @@ function getNewTxList(tempTxList) {  //the other layers of merkle tree
         index++;
     }
     publicTree = publicTree.concat(prepublicTree); //add prepublicTree to publicTree
-    //  console.log(prepublicTree);
-    console.log(publicTree);
     return newTxList;
 }
 
@@ -226,14 +221,14 @@ function getNewTxList(tempTxList) {  //the other layers of merkle tree
 //验证阶段
 
 window.computeRoot2 = function (){
-  if(window.originRoot != "" && window.newRootAddress != ""){
+  if(window.originRoot != "" && window.newRootAddress.address != ""){
     return;
   }
 
   var challenge = $("#challengeNum").val();
   var preleaves = getPreleaves().toString();
-  var auxiliarypath = getAuxiliarypath().toString();
-  var publictreelength = getPublictreeLength(publicTree.toString());
+  var auxiliarypath = getAuxiliarypath();
+  var publictreelength = publicTree.length;
   var leave=SHA256(preleaves.trim()).toString();
   if(!preleaves || !auxiliarypath || !publictreelength){
     alert("计算root2出现异常！！！");
@@ -243,19 +238,12 @@ window.computeRoot2 = function (){
   var h1=0;
   var h2=0;
 
-  var path=[];
-  while(h2<auxiliarypath.length){   //将辅助路径转换成数组
-    path.push(auxiliarypath.substr(h2,64));
-    h2+=65;
-  }
-  console.log("path length is " + path.length);
-  console.log("publicTree length is "+ publictreelength);
-  
+  var path = auxiliarypath;
   var deep = 0;
   var k = 0;
-  while (k >= publictreelength) { //deep of the tree
-      k += Math.pow(2, deep);
-      deep++;
+  while (k < publictreelength) { //deep of the tree
+    k += Math.pow(2, deep);
+    deep++;
   }
 
   var start = 0;   //i is the challenge's index in npublicTree 
@@ -263,7 +251,6 @@ window.computeRoot2 = function (){
       start += Math.pow(2, i);
   }
   start++;
-  alert(start);
   var i = Number(challenge) + Number(start); //i is the index of verified shard in npublictree
   console.log("the verified index is "+i);
 
@@ -272,15 +259,15 @@ window.computeRoot2 = function (){
   while (j < path.length) {
       if (i % 2 == 0) {
         console.log(i);
-          var digest = leave.concat(path[j]);          
-          i = i / 2;
-          console.log(i);
+        var digest = leave.concat(path[j]);          
+        i = i / 2;
+        console.log(i);
 
       } else if (i % 2==1) {
         console.log(i);
-          var digest = path[j].concat(leave);          
-          i = (i - 1)/ 2;
-          console.log(i);
+        var digest = path[j].concat(leave);          
+        i = (i - 1)/ 2;
+        console.log(i);
       }
       j +=1;
       console.log(digest);
@@ -290,7 +277,8 @@ window.computeRoot2 = function (){
  
   window.newRoot = '0x'.concat(leave);  //root2 is the new merkle tree 
   $("#root2").text("MerkleRoot2 is: " + newRoot);
-  //storeData(window.originRoot, window.newRootAddress);  
+
+  storeData(window.originRoot, window.newRootAddress);  
 }
 
 function getPublictreeLength(publicTree){
@@ -315,8 +303,6 @@ function getPreleaves(){
 }
 
 function getAuxiliarypath() {
-  var starttime = new Date().getTime();
-
   var num = $("#challengeNum").val();
   if(num < 0 || num >= hashResult.length){
     alert("分片索引超出范围！！！");
@@ -337,9 +323,6 @@ function getAuxiliarypath() {
       j++;
       i = Math.floor(i / 2);
   }
-  console.log(path);  
-  var endtime = new Date().getTime();
-  console.log("the auxiliarypath time is " + (endtime - starttime));
   return path; //path[] is the auxiliary path of shard i
 }
 
@@ -348,6 +331,10 @@ function transArray(publicTree) {   //transpose publicTree to get npublicTree
         npublicTree[j] = publicTree[i];
     }
     npublicTree[0] = "";
+}
+
+window.toHash = function(str){
+  return "0x" + SHA256(str).toString();
 }
 
 
