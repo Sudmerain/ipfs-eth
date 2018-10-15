@@ -73,4 +73,13 @@ cnpm install ipfs-api
 ```
 
 ### 运行
-在工程的根目录下运行命令`npm run start`，在浏览器里输入：localhost:8080或者localhost:8081即可。
+
+1、启动IPFS服务 
+打开终端，任意目录下输入：
+ipfs daemon
+
+2、开启Ethereum
+切换到Geth的运行目录，输入以下命令进入eth控制台：
+geth --datadir="./" --networkid 23422  --rpc --rpccorsdomain="*" --rpcport="8545" --minerthreads="1" --mine --nodiscover --maxpeers=0 --unlock 0 console
+
+3、在工程的根目录下运行命令`npm run start`，在浏览器里输入：localhost:8080或者localhost:8081即可。
